@@ -236,13 +236,22 @@ function time2str(time){
 
 app.get('/upsertDB',
   async (req,res,next) => {
-    //await Course.deleteMany({})
     for (course of courses){
       const {subject,coursenum,section,term}=course;
       const num = getNum(coursenum);
       course.num=num
       course.suffix = coursenum.slice(num.length)
-      await Course.findOneAndUpdate({subject,coursenum,section,term},course,{upsert:true})
+      course.strTimes = []
+      if (!course.times || course.times.length == 0) {
+          course.strTimes = ["not scheduled"]
+          }
+      else{
+          for(let i = 0; i<course.times.length; i++){
+              course.strTimes.push(time2str(course.times[i]))
+          }
+      }
+      const strTimes = course.strTimes
+      await Course.findOneAndUpdate({ subject, coursenum, section, term, times, strTimes}, course, { upsert: true })
     }
     const num = await Course.find({}).count();
     res.send("data uploaded: "+num)
@@ -253,12 +262,9 @@ app.get('/upsertDB',
 app.post('/courses/bySubject',
   // show list of courses in a given subject
   async (req,res,next) => {
-    const {subject} = req.body;
-    const courses = await Course.find({subject:subject,independent_study:false}).sort({term:1,num:1,section:1})
-    
+    const { subject } = req.body;
+    const courses = await Course.find({ subject: subject, independent_study: false }).sort({ term: 1, num: 1, section: 1 })
     res.locals.courses = courses
-    res.locals.times2str = times2str
-    //res.json(courses)
     res.render('courselist')
   }
 )
@@ -266,11 +272,9 @@ app.post('/courses/bySubject',
 app.get('/courses/show/:courseId',
   // show all info about a course given its courseid
   async (req,res,next) => {
-    const {courseId} = req.params;
-    const course = await Course.findOne({_id:courseId})
+    const { courseId } = req.params;
+    const course = await Course.findOne({ _id: courseId })
     res.locals.course = course
-    res.locals.times2str = times2str
-    //res.json(course)
     res.render('course')
   }
 )
@@ -289,16 +293,25 @@ app.get('/courses/byInst/:email',
 app.post('/courses/byInst',
   // show courses taught by a faculty send from a form
   async (req,res,next) => {
-    const email = req.body.email+"@brandeis.edu";
-    const courses = 
-       await Course
-               .find({instructor:email,independent_study:false})
-               .sort({term:1,num:1,section:1})
-    //res.json(courses)
+    const email = req.body.email + "@brandeis.edu";
+    const courses =
+        await Course
+        .find({ instructor: email, independent_study: false })
+        .sort({ term: 1, num: 1, section: 1 })
     res.locals.courses = courses
-    res.locals.times2str = times2str
     res.render('courselist')
   }
+)
+
+app.post('/courses/byName',
+    // show list of courses in a given name
+    async(req, res, next) => {
+        const name = req.body.name;
+        console.log(name)
+        const courses = await Course.find({ name: {'$regex': name}, independent_study: false }).sort({ term: 1, num: 1, section: 1 })
+        res.locals.courses = courses
+        res.render('courselist')
+    }
 )
 
 app.use(isLoggedIn)
@@ -375,7 +388,7 @@ app.use(function(err, req, res, next) {
 //  Starting up the server!
 // *********************************************************** //
 //Here we set the port to use between 1024 and 65535  (2^16-1)
-const port = "5000";
+const port = "5001";
 app.set("port", port);
 
 // and now we startup the server listening on that port
