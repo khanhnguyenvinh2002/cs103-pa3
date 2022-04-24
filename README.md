@@ -22,3 +22,4 @@ and start the project with
 nodemon
 ```
 
+Andrew's video: https://brandeis.zoom.us/rec/share/RnW9igd8pSPoA-fcDE8pUeUV2uZad--0mY0KGJtaQGnB4-TaSV5-QYDpi6rppBt_.uI3SP0EryPZaNB3R?startTime=1650780101000
